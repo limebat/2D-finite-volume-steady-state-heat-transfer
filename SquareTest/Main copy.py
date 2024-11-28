@@ -110,8 +110,7 @@ def GS(T, neighbors, boundary_elements, circumcenters, elements, points, areas, 
     return T
 
 
-
-def get_extended_neighbors(neighbors, i, levels):
+def get_extended_neighbors(neighbors, i, levels=2):
     """ 
     Function to get extended neighbors for a given element i up to specified levels.
     """
@@ -128,20 +127,7 @@ def get_extended_neighbors(neighbors, i, levels):
     extended_neighbors.discard(i)
     return list(extended_neighbors)
 
-
-def get_weight(level, length_ij, distance_ij):
-    base_weight = length_ij / distance_ij
-    if level == 1:
-        return base_weight * (3. / 3)
-    elif level == 2:
-        return base_weight * (-1. / 6)
-    elif level == 3:
-        return base_weight * (-1. / 12)
-    else:
-        return base_weight * (-1. / (2 ** level))  # Diffusive square denominator incase higher orders requested
-
-
-def SOR(T, neighbors, boundary_elements, circumcenters, elements, points, areas, Q, lambda_value, w=1.3, levels=5):
+def SOR(T, neighbors, boundary_elements, circumcenters, elements, points, areas, Q, lambda_value, w=1.3, levels=2):
     num_elements = len(elements)
     
     for i in range(num_elements):
@@ -150,32 +136,27 @@ def SOR(T, neighbors, boundary_elements, circumcenters, elements, points, areas,
         
         # Get extended neighbors up to specified levels
         extended_neighbors = get_extended_neighbors(neighbors, i, levels)
-    
-        if len(extended_neighbors) == (levels*3+1):
-            for j in extended_neighbors:
-                    length_ij = calculate_edge_length(i, j, elements, points)
-                    distance_ij = np.linalg.norm(circumcenters[i] - circumcenters[j])
-
-                    if j in neighbors[i]: 
-                        level = 1 
-                    elif any(n in neighbors[i] for n in neighbors[j]): 
-                        level = 2 
-                    else: 
-                        level = 3
-                    
-                    # Adjust weight based on the level
-                    weight = get_weight(level, length_ij, distance_ij)
-                    neighbor_flux_sum += T[j] * weight
-                    total_flux_weight += weight
-                    
-        else:
-            for j in neighbors[i]:
+        
+        for j in neighbors[i]:
+            if len(extended_neighbors) >= 9:
                 length_ij = calculate_edge_length(i, j, elements, points)
                 distance_ij = np.linalg.norm(circumcenters[i] - circumcenters[j])
-                weight = length_ij / distance_ij
+                level = 1 if j in neighbors[i] else 2  # Determine the level of the neighbor
+                
+                # Adjust weight based on the level
+                weight = (length_ij / distance_ij) * (3. / 3  if level == 1 else -1.0/3 ) #-1./ 6 )
                 neighbor_flux_sum += T[j] * weight
                 total_flux_weight += weight
-                
+                third_order = 1. #2. / 3
+            else:
+                #Swap to frst order instead of not satisfied:
+                for j in neighbors[i]:
+                    length_ij = calculate_edge_length(i, j, elements, points)
+                    distance_ij = np.linalg.norm(circumcenters[i] - circumcenters[j])
+                    weight = length_ij / distance_ij
+                    neighbor_flux_sum += T[j] * weight
+                    total_flux_weight += weight
+            
         if boundary_elements[i]:
             T_ghost = -T[i]
             weight = length_ij / distance_ij
@@ -188,7 +169,7 @@ def SOR(T, neighbors, boundary_elements, circumcenters, elements, points, areas,
     return T
 
 
-def solve_eqn(coordinates_file, elements_file, lambda_value, Q, tol=1e-5, max_iter=20000):
+def solve_eqn(coordinates_file, elements_file, lambda_value, Q, tol=1e-6, max_iter=20000):
     points, elements, areas, circumcenters = load_mesh(coordinates_file, elements_file)
     num_elements = len(elements)
     
@@ -244,8 +225,8 @@ def solve_eqn(coordinates_file, elements_file, lambda_value, Q, tol=1e-5, max_it
         
     return points, elements, T, residual, circumcenters
 
-coordinate_file_path = r'mesh\coordinates_10.input'
-element_file_path = r'mesh\elements_10.input'
+coordinate_file_path = r'mesh\coordinates_20.input'
+element_file_path = r'mesh\elements_20.input'
 
 lambda_value = 1
 Q = -1
