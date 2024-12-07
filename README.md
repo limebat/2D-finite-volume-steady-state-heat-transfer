@@ -1,3 +1,14 @@
+**IMPORTANT NOTE**
+
+This repository has been discontinued and moved instead to the following link. **PLEASE VISIT THIS REPOSITORY INSTEAD**
+
+
+https://github.com/limebat/2nd-Order-Flux--Upwind--for-Finite-Volume-Method-CFD/tree/main
+
+**It will also contain the video link for the presentation and final paper**
+
+
+
 # 2D-finite-volume-steady-state-heat-transfer
 2D finite volume steady state heat transfer project. Square and then circle profile examples with validation / verification are provided. Project to be completed by mid-December 2024.
 
